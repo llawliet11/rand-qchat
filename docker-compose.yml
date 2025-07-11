@@ -12,6 +12,7 @@ services:
       - chat-network
     volumes:
       - ./logs:/app/logs
+      - chat-data:/app/data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/"]
       interval: 30s
@@ -25,4 +26,6 @@ networks:
 
 volumes:
   logs:
+    driver: local
+  chat-data:
     driver: local

@@ -243,6 +243,26 @@ button:disabled {
     color: #856404;
 }
 
+.message.historical-message {
+    opacity: 0.8;
+    border-left: 3px solid #667eea;
+    background: #f8f9fa;
+}
+
+.message.historical-message .message-nickname {
+    color: #495057;
+}
+
+.message.history-separator {
+    background: #e9ecef;
+    border: 1px solid #dee2e6;
+    text-align: center;
+    font-weight: bold;
+    color: #6c757d;
+    margin: 10px 0;
+    font-size: 0.9em;
+}
+
 .message-header {
     display: flex;
     justify-content: space-between;

@@ -52,6 +52,10 @@ socket.on('chat-message', (data) => {
     addChatMessage(data);
 });
 
+socket.on('chat-history', (historyMessages) => {
+    loadChatHistory(historyMessages);
+});
+
 socket.on('user-typing', (typingNickname) => {
     if (typingNickname !== nickname) {
         typingUsers.add(typingNickname);
@@ -124,15 +128,19 @@ logoutBtn.addEventListener('click', () => {
 });
 
 // Functions
-function addChatMessage(data) {
+function addChatMessage(data, isHistorical = false) {
     const messageEl = document.createElement('div');
     messageEl.className = 'message';
-    
+
     const isOwnMessage = data.nickname === nickname;
     if (isOwnMessage) {
         messageEl.classList.add('own-message');
     }
-    
+
+    if (isHistorical) {
+        messageEl.classList.add('historical-message');
+    }
+
     messageEl.innerHTML = `
         <div class="message-header">
             <span class="message-nickname">${escapeHtml(data.nickname)}</span>
@@ -140,9 +148,11 @@ function addChatMessage(data) {
         </div>
         <div class="message-content">${escapeHtml(data.message)}</div>
     `;
-    
+
     messagesEl.appendChild(messageEl);
-    scrollToBottom();
+    if (!isHistorical) {
+        scrollToBottom();
+    }
 }
 
 function addSystemMessage(message) {
@@ -195,6 +205,40 @@ function updateTypingIndicator() {
 
 function scrollToBottom() {
     messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function loadChatHistory(historyMessages) {
+    if (!historyMessages || historyMessages.length === 0) {
+        return;
+    }
+
+    // Add a separator for historical messages
+    const separatorEl = document.createElement('div');
+    separatorEl.className = 'message history-separator';
+    separatorEl.innerHTML = `
+        <div class="message-content">
+            📜 Chat History (${historyMessages.length} messages)
+        </div>
+    `;
+    messagesEl.appendChild(separatorEl);
+
+    // Add historical messages
+    historyMessages.forEach(message => {
+        addChatMessage(message, true);
+    });
+
+    // Add another separator to mark end of history
+    const endSeparatorEl = document.createElement('div');
+    endSeparatorEl.className = 'message history-separator';
+    endSeparatorEl.innerHTML = `
+        <div class="message-content">
+            ⬆️ End of chat history ⬆️
+        </div>
+    `;
+    messagesEl.appendChild(endSeparatorEl);
+
+    // Scroll to bottom after loading history
+    scrollToBottom();
 }
 
 function escapeHtml(text) {

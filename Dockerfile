@@ -17,8 +17,8 @@ RUN npm ci --only=production && npm cache clean --force
 # Copy the rest of the application code
 COPY . .
 
-# Create logs directory and set permissions
-RUN mkdir -p logs && \
+# Create logs and data directories and set permissions
+RUN mkdir -p logs data && \
     chown -R nodejs:nodejs /app
 
 # Switch to non-root user
