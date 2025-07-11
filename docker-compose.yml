@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  l4d2-qchat:
+    build: .
+    container_name: l4d2-qchat-app
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    networks:
+      - chat-network
+    volumes:
+      - ./logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  chat-network:
+    driver: bridge
+
+volumes:
+  logs:
+    driver: local

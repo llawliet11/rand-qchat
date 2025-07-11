@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>L4D2 QChat - Public Room</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="chat-container">
+        <!-- Header -->
+        <div class="chat-header">
+            <div class="header-left">
+                <h2>🎮 L4D2 QChat - Public Room</h2>
+                <span id="user-nickname" class="current-user"></span>
+            </div>
+            <div class="header-right">
+                <span id="online-count" class="online-count">0 online</span>
+                <button id="logout-btn" class="logout-btn">Logout</button>
+            </div>
+        </div>
+
+        <div class="chat-main">
+            <!-- Sidebar with user list -->
+            <div class="sidebar">
+                <h3>Online Users</h3>
+                <ul id="user-list" class="user-list"></ul>
+            </div>
+
+            <!-- Chat area -->
+            <div class="chat-area">
+                <!-- Messages container -->
+                <div id="messages" class="messages"></div>
+                
+                <!-- Typing indicator -->
+                <div id="typing-indicator" class="typing-indicator" style="display: none;"></div>
+
+                <!-- Message input -->
+                <div class="message-input-container">
+                    <form id="message-form" class="message-form">
+                        <input 
+                            type="text" 
+                            id="message-input" 
+                            placeholder="Type your message..." 
+                            maxlength="500"
+                            autocomplete="off"
+                        >
+                        <button type="submit" id="send-btn">Send</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="client.js"></script>
+</body>
+</html>

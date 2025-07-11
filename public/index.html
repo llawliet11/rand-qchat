@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>L4D2 QChat - Join Chat</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="login-form">
+            <h1>🎮 L4D2 QChat</h1>
+            <p>Enter your nickname to join the public chat room</p>
+            
+            <form id="loginForm">
+                <div class="input-group">
+                    <input 
+                        type="text" 
+                        id="nickname" 
+                        placeholder="Enter your nickname..." 
+                        maxlength="20" 
+                        required
+                        autocomplete="off"
+                    >
+                </div>
+                <button type="submit" id="joinBtn">Join Chat</button>
+            </form>
+            
+            <div id="error-message" class="error-message" style="display: none;"></div>
+            
+            <div class="info">
+                <p>💡 Tips:</p>
+                <ul>
+                    <li>Choose a unique nickname</li>
+                    <li>Be respectful to other players</li>
+                    <li>Have fun chatting!</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const loginForm = document.getElementById('loginForm');
+        const nicknameInput = document.getElementById('nickname');
+        const joinBtn = document.getElementById('joinBtn');
+        const errorMessage = document.getElementById('error-message');
+
+        // Focus on nickname input
+        nicknameInput.focus();
+
+        // Handle form submission
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const nickname = nicknameInput.value.trim();
+            
+            if (!nickname) {
+                showError('Please enter a nickname');
+                return;
+            }
+
+            if (nickname.length < 2) {
+                showError('Nickname must be at least 2 characters long');
+                return;
+            }
+
+            // Disable form while connecting
+            joinBtn.disabled = true;
+            joinBtn.textContent = 'Joining...';
+            hideError();
+
+            // Attempt to join
+            socket.emit('join', nickname);
+        });
+
+        // Handle successful join
+        socket.on('joined', (nickname) => {
+            // Store nickname in sessionStorage
+            sessionStorage.setItem('nickname', nickname);
+            // Redirect to chat
+            window.location.href = '/chat';
+        });
+
+        // Handle nickname taken
+        socket.on('nickname-taken', () => {
+            showError('This nickname is already taken. Please choose another one.');
+            joinBtn.disabled = false;
+            joinBtn.textContent = 'Join Chat';
+            nicknameInput.focus();
+        });
+
+        // Handle connection errors
+        socket.on('connect_error', () => {
+            showError('Connection failed. Please try again.');
+            joinBtn.disabled = false;
+            joinBtn.textContent = 'Join Chat';
+        });
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+        }
+
+        function hideError() {
+            errorMessage.style.display = 'none';
+        }
+
+        // Allow Enter key to submit
+        nicknameInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                loginForm.dispatchEvent(new Event('submit'));
+            }
+        });
+    </script>
+</body>
+</html>
