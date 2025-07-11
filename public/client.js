@@ -1,6 +1,7 @@
-// Check if user has a nickname, if not redirect to login
+// Check if user has a nickname and password, if not redirect to login
 const nickname = sessionStorage.getItem('nickname');
-if (!nickname) {
+const password = sessionStorage.getItem('password');
+if (!nickname || !password) {
     window.location.href = '/';
 }
 
@@ -27,12 +28,12 @@ const typingUsers = new Set();
 userNicknameEl.textContent = `Welcome, ${nickname}!`;
 messageInput.focus();
 
-// Join the chat room
-socket.emit('join', nickname);
+// Join the chat room with credentials
+socket.emit('join', { nickname, password });
 
 // Socket event listeners
-socket.on('joined', (joinedNickname) => {
-    addSystemMessage(`You joined the chat as ${joinedNickname}`);
+socket.on('joined', (userData) => {
+    addSystemMessage(`You joined the chat as ${userData.nickname}`);
 });
 
 socket.on('user-joined', (data) => {
@@ -68,8 +69,16 @@ socket.on('user-stop-typing', (typingNickname) => {
     updateTypingIndicator();
 });
 
-socket.on('nickname-taken', () => {
-    alert('Nickname is already taken. Please choose another one.');
+
+socket.on('force-logout', (reason) => {
+    alert(reason || 'You have been logged out because someone else logged in with your credentials.');
+    sessionStorage.clear();
+    window.location.href = '/';
+});
+
+socket.on('login-failed', (reason) => {
+    alert(reason || 'Login failed. Please check your credentials.');
+    sessionStorage.clear();
     window.location.href = '/';
 });
 
@@ -79,7 +88,7 @@ socket.on('disconnect', () => {
 
 socket.on('reconnect', () => {
     addSystemMessage('Reconnected to server!');
-    socket.emit('join', nickname);
+    socket.emit('join', { nickname, password });
 });
 
 // Form submission
@@ -121,7 +130,7 @@ messageInput.addEventListener('input', () => {
 // Logout functionality
 logoutBtn.addEventListener('click', () => {
     if (confirm('Are you sure you want to logout?')) {
-        sessionStorage.removeItem('nickname');
+        sessionStorage.clear();
         socket.disconnect();
         window.location.href = '/';
     }

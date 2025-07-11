@@ -13,6 +13,9 @@ const PORT = process.env.PORT || 3000;
 // Store connected users
 const users = new Map();
 
+// Store user sessions by nickname for managing duplicate logins
+const userSessions = new Map(); // nickname -> {socketId, password}
+
 // Chat history configuration
 const CHAT_HISTORY_FILE = path.join(__dirname, 'data', 'chat-history.json');
 const MAX_HISTORY_MESSAGES = 100;
@@ -98,14 +101,38 @@ io.on('connection', (socket) => {
     console.log('A user connected:', socket.id);
 
     // Handle user joining
-    socket.on('join', async (nickname) => {
-        // Check if nickname is already taken
-        const isNicknameTaken = Array.from(users.values()).some(user => user.nickname === nickname);
-        
-        if (isNicknameTaken) {
-            socket.emit('nickname-taken');
-            return;
+    socket.on('join', async (userData) => {
+        const { nickname, password } = userData;
+        console.log(`Join attempt - Nickname: ${nickname}, Socket ID: ${socket.id}`);
+        console.log(`Current users:`, Array.from(users.values()).map(u => ({ nickname: u.nickname, id: u.id })));
+
+        // Check if this nickname is already logged in
+        const existingSession = userSessions.get(nickname);
+        if (existingSession) {
+            // If password matches, kick out the previous session
+            if (existingSession.password === password) {
+                const previousSocketId = existingSession.socketId;
+                const previousSocket = io.sockets.sockets.get(previousSocketId);
+                
+                if (previousSocket) {
+                    // Notify the previous session it's being kicked out
+                    previousSocket.emit('force-logout', 'Another user logged in with your credentials');
+                    // Disconnect the previous session
+                    previousSocket.disconnect(true);
+                    console.log(`Kicked out previous session for ${nickname} (socket: ${previousSocketId})`);
+                }
+            } else {
+                // Password doesn't match, deny access
+                socket.emit('login-failed', 'Invalid credentials');
+                return;
+            }
         }
+
+        // Store user session
+        userSessions.set(nickname, {
+            socketId: socket.id,
+            password: password
+        });
 
         // Store user info
         users.set(socket.id, {
@@ -118,7 +145,7 @@ io.on('connection', (socket) => {
         socket.join('public-room');
 
         // Notify user they joined successfully
-        socket.emit('joined', nickname);
+        socket.emit('joined', { nickname });
 
         // Broadcast to all users that someone joined
         socket.to('public-room').emit('user-joined', {
@@ -185,8 +212,16 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         const user = users.get(socket.id);
         if (user) {
+            console.log(`User disconnecting - Nickname: ${user.nickname}, Socket ID: ${socket.id}`);
+            
             // Remove user from users map
             users.delete(socket.id);
+
+            // Clean up user session if this was the active session
+            const session = userSessions.get(user.nickname);
+            if (session && session.socketId === socket.id) {
+                userSessions.delete(user.nickname);
+            }
 
             // Notify others that user left
             socket.to('public-room').emit('user-left', {
@@ -198,7 +233,7 @@ io.on('connection', (socket) => {
             const userList = Array.from(users.values()).map(user => user.nickname);
             io.to('public-room').emit('user-list', userList);
 
-            console.log(`${user.nickname} disconnected`);
+            console.log(`${user.nickname} disconnected - Remaining users:`, userList);
         }
     });
 });
