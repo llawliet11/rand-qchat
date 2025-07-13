@@ -122,9 +122,11 @@ button:disabled {
 /* Chat page styles */
 .chat-container {
     height: 100vh;
+    height: 100dvh; /* Use dynamic viewport height for better mobile support */
     display: flex;
     flex-direction: column;
     background: white;
+    position: relative;
 }
 
 .chat-header {
@@ -326,15 +328,45 @@ button:disabled {
 
 /* Responsive design */
 @media (max-width: 768px) {
+    .chat-container {
+        height: 100vh;
+        height: 100dvh;
+        overflow: hidden;
+    }
+    
     .chat-main {
         flex-direction: column;
+        flex: 1;
+        overflow: hidden;
     }
     
     .sidebar {
         width: 100%;
-        height: 150px;
+        height: 120px;
         border-right: none;
         border-bottom: 1px solid #e1e5e9;
+        flex-shrink: 0;
+        padding: 15px;
+    }
+    
+    .chat-area {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+    
+    .messages {
+        flex: 1;
+        overflow-y: auto;
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+        padding: 15px;
+    }
+    
+    .message-input-container {
+        flex-shrink: 0;
+        padding: 10px 15px;
     }
     
     .message.own-message {
@@ -348,5 +380,10 @@ button:disabled {
     .header-right {
         flex-direction: column;
         gap: 5px;
+    }
+    
+    /* Ensure content doesn't overflow on very small screens */
+    .message-form input {
+        font-size: 16px; /* Prevents zoom on iOS */
     }
 }
