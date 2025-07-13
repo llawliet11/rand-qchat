@@ -23,27 +23,29 @@
                         autocomplete="off"
                     >
                 </div>
+                <div class="input-group">
+                    <input 
+                        type="password" 
+                        id="password" 
+                        placeholder="Enter your password..." 
+                        required
+                        autocomplete="off"
+                    >
+                </div>
                 <button type="submit" id="joinBtn">Join Chat</button>
             </form>
             
             <div id="error-message" class="error-message" style="display: none;"></div>
             
-            <div class="info">
-                <p>💡 Tips:</p>
-                <ul>
-                    <li>Choose a unique nickname</li>
-                    <li>Be respectful to other players</li>
-                    <li>Have fun chatting!</li>
-                </ul>
-            </div>
         </div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        const socket = io();
+        let socket = null;
         const loginForm = document.getElementById('loginForm');
         const nicknameInput = document.getElementById('nickname');
+        const passwordInput = document.getElementById('password');
         const joinBtn = document.getElementById('joinBtn');
         const errorMessage = document.getElementById('error-message');
 
@@ -55,6 +57,7 @@
             e.preventDefault();
             
             const nickname = nicknameInput.value.trim();
+            const password = passwordInput.value;
             
             if (!nickname) {
                 showError('Please enter a nickname');
@@ -66,37 +69,54 @@
                 return;
             }
 
+            if (!password) {
+                showError('Please enter a password');
+                return;
+            }
+
             // Disable form while connecting
             joinBtn.disabled = true;
             joinBtn.textContent = 'Joining...';
             hideError();
 
-            // Attempt to join
-            socket.emit('join', nickname);
+            // Create socket connection only when attempting to join
+            if (!socket) {
+                socket = io();
+                setupSocketListeners();
+            }
+
+            // Attempt to join with nickname and password
+            socket.emit('join', { nickname, password });
         });
 
-        // Handle successful join
-        socket.on('joined', (nickname) => {
-            // Store nickname in sessionStorage
-            sessionStorage.setItem('nickname', nickname);
-            // Redirect to chat
-            window.location.href = '/chat';
-        });
+        function setupSocketListeners() {
+            // Handle successful join
+            socket.on('joined', (userData) => {
+                // Store nickname and password in sessionStorage
+                sessionStorage.setItem('nickname', userData.nickname);
+                sessionStorage.setItem('password', passwordInput.value);
+                // Redirect to chat
+                window.location.href = '/chat';
+            });
 
-        // Handle nickname taken
-        socket.on('nickname-taken', () => {
-            showError('This nickname is already taken. Please choose another one.');
-            joinBtn.disabled = false;
-            joinBtn.textContent = 'Join Chat';
-            nicknameInput.focus();
-        });
+            // Handle login failed
+            socket.on('login-failed', (reason) => {
+                showError(reason || 'Invalid credentials. Please try again.');
+                joinBtn.disabled = false;
+                joinBtn.textContent = 'Join Chat';
+                passwordInput.focus();
+                // Disconnect socket to ensure clean state
+                socket.disconnect();
+                socket = null;
+            });
 
-        // Handle connection errors
-        socket.on('connect_error', () => {
-            showError('Connection failed. Please try again.');
-            joinBtn.disabled = false;
-            joinBtn.textContent = 'Join Chat';
-        });
+            // Handle connection errors
+            socket.on('connect_error', () => {
+                showError('Connection failed. Please try again.');
+                joinBtn.disabled = false;
+                joinBtn.textContent = 'Join Chat';
+            });
+        }
 
         function showError(message) {
             errorMessage.textContent = message;
